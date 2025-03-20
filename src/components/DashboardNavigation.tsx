@@ -1,129 +1,149 @@
 
-import { useEffect, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
-  LayoutGrid, 
-  ListPlus, 
-  Clock, 
-  UserCog,
-  BarChart4,
-  MessageSquare
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
+  LayoutDashboard, 
+  Utensils, 
+  Calendar, 
+  MapIcon, 
+  Users, 
+  Settings, 
+  LogOut, 
+  ChevronRight,
+  Truck,
+  LineChart,
+  BookOpen
+} from "lucide-react";
+
+interface NavigationItem {
+  name: string;
+  icon: React.ReactNode;
+  href: string;
+  role?: "donor" | "recipient" | "volunteer" | "all";
+}
+
+const navigationItems: NavigationItem[] = [
+  {
+    name: "Overview",
+    icon: <LayoutDashboard className="h-4 w-4" />,
+    href: "overview",
+    role: "all",
+  },
+  {
+    name: "Available Donations",
+    icon: <Utensils className="h-4 w-4" />,
+    href: "available",
+    role: "recipient",
+  },
+  {
+    name: "My Reservations",
+    icon: <Calendar className="h-4 w-4" />,
+    href: "reserved",
+    role: "recipient",
+  },
+  {
+    name: "Create Donation",
+    icon: <Utensils className="h-4 w-4" />,
+    href: "donate",
+    role: "donor",
+  },
+  {
+    name: "Pending Deliveries",
+    icon: <Truck className="h-4 w-4" />,
+    href: "deliveries",
+    role: "volunteer",
+  },
+  {
+    name: "Donation Map",
+    icon: <MapIcon className="h-4 w-4" />,
+    href: "map",
+    role: "all",
+  },
+  {
+    name: "Analytics",
+    icon: <LineChart className="h-4 w-4" />,
+    href: "analytics",
+    role: "all",
+  },
+  {
+    name: "Education",
+    icon: <BookOpen className="h-4 w-4" />,
+    href: "education",
+    role: "all",
+  },
+  {
+    name: "Community",
+    icon: <Users className="h-4 w-4" />,
+    href: "community",
+    role: "all",
+  },
+  {
+    name: "Settings",
+    icon: <Settings className="h-4 w-4" />,
+    href: "settings",
+    role: "all",
+  },
+];
+
+function getFilteredNavigation(role: string) {
+  return navigationItems.filter(
+    (item) => item.role === "all" || item.role === role
+  );
+}
 
 const DashboardNavigation = () => {
-  const { pathname } = useLocation();
-  const { currentUser } = useAuth();
-  const [activeItem, setActiveItem] = useState<string>('');
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathParts = location.pathname.split('/');
+  const currentPath = pathParts[pathParts.length - 1] || 'overview';
 
-  useEffect(() => {
-    // Set the active item based on the current pathname
-    const path = pathname.split('/').pop() || '';
-    setActiveItem(path === 'dashboard' ? 'overview' : path);
-  }, [pathname]);
-
-  // Define navigation items based on user role
-  const getNavItems = () => {
-    const baseItems = [
-      {
-        name: 'overview',
-        label: 'Overview',
-        icon: LayoutGrid,
-        href: '/dashboard',
-      },
-      {
-        name: 'profile',
-        label: 'Profile',
-        icon: UserCog,
-        href: '/dashboard/profile',
-      },
-      {
-        name: 'messages',
-        label: 'Messages',
-        icon: MessageSquare,
-        href: '/dashboard/messages',
-      },
-    ];
-
-    const roleSpecificItems = {
-      donor: [
-        {
-          name: 'donate',
-          label: 'Create Listing',
-          icon: ListPlus,
-          href: '/dashboard/donate',
-        },
-        {
-          name: 'history',
-          label: 'Donation History',
-          icon: Clock,
-          href: '/dashboard/history',
-        },
-        {
-          name: 'impact',
-          label: 'My Impact',
-          icon: BarChart4,
-          href: '/dashboard/impact',
-        },
-      ],
-      recipient: [
-        {
-          name: 'available',
-          label: 'Available Food',
-          icon: ListPlus,
-          href: '/dashboard/available',
-        },
-        {
-          name: 'reserved',
-          label: 'My Reservations',
-          icon: Clock,
-          href: '/dashboard/reserved',
-        }
-      ],
-      volunteer: [
-        {
-          name: 'deliveries',
-          label: 'Pending Deliveries',
-          icon: Clock,
-          href: '/dashboard/deliveries',
-        },
-        {
-          name: 'completed',
-          label: 'Completed Deliveries',
-          icon: BarChart4,
-          href: '/dashboard/completed',
-        }
-      ]
-    };
-
-    return [
-      ...baseItems,
-      ...(currentUser?.role && roleSpecificItems[currentUser.role] || [])
-    ];
+  const handleSignOut = () => {
+    logout();
+    navigate("/");
   };
 
-  const navItems = getNavItems();
+  // Filter navigation based on user role
+  const filteredNavigation = currentUser
+    ? getFilteredNavigation(currentUser.role)
+    : [];
 
   return (
-    <div className="flex w-full md:w-auto overflow-x-auto md:flex-col rounded-lg shadow-sm sticky top-4 bg-white dark:bg-gray-900 border">
-      <nav className="w-full md:w-56 p-2 flex md:flex-col space-x-1 md:space-x-0 md:space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.name}
-            to={item.href}
-            className={cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              activeItem === item.name
-                ? "bg-foodshare-50 text-foodshare-700 dark:bg-foodshare-900/20 dark:text-foodshare-400"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <item.icon className="mr-2 h-4 w-4" />
-            <span>{item.label}</span>
-          </Link>
-        ))}
-      </nav>
+    <div className="h-full flex flex-col md:flex-row md:h-auto">
+      <div className="flex md:flex-col flex-1 md:space-y-1 p-1 overflow-x-auto md:overflow-y-auto md:w-52">
+        <ScrollArea className="md:h-[calc(100vh-12rem)]">
+          <div className="flex md:flex-col gap-1 md:pb-0 pb-2">
+            {filteredNavigation.map((item) => (
+              <Button
+                key={item.name}
+                variant={currentPath === item.href ? "default" : "ghost"}
+                className={cn(
+                  "justify-start md:w-full",
+                  currentPath === item.href
+                    ? "bg-foodshare-500 hover:bg-foodshare-500/90 text-white"
+                    : ""
+                )}
+                onClick={() => navigate(`/dashboard/${item.href}`)}
+              >
+                {item.icon}
+                <span className="ml-2">{item.name}</span>
+                {currentPath === item.href && (
+                  <ChevronRight className="ml-auto h-4 w-4" />
+                )}
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="mt-auto pt-2 hidden md:block">
+          <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

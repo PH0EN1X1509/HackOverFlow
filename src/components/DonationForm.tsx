@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import ShelfLifeValidator, { ValidationResult } from "./ShelfLifeValidator";
+import { Separator } from "@/components/ui/separator";
 
 interface DonationFormProps {
   onSubmit: (data: DonationFormValues) => void;
@@ -42,6 +44,7 @@ export interface DonationFormValues {
   location: string;
   expiry: Date;
   imageUrl: string;
+  validationResult?: ValidationResult;
 }
 
 const foodTypes = [
@@ -75,6 +78,8 @@ const foodImageOptions = [
 
 const DonationForm = ({ onSubmit }: DonationFormProps) => {
   const [selectedImage, setSelectedImage] = useState(foodImageOptions[0]);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationCompleted, setValidationCompleted] = useState(false);
 
   const form = useForm<DonationFormValues>({
     defaultValues: {
@@ -88,15 +93,42 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
     },
   });
 
+  // Update form expiry date when validation suggests a new expiry
+  useEffect(() => {
+    if (validationResult?.suggestedExpiry) {
+      form.setValue("expiry", validationResult.suggestedExpiry);
+    }
+  }, [validationResult, form]);
+
+  const handleValidationComplete = (result: ValidationResult) => {
+    setValidationResult(result);
+    setValidationCompleted(true);
+  };
+
   const handleFormSubmit = (data: DonationFormValues) => {
-    // Add the selected image URL to the form data
+    // Check if validation has been completed
+    if (!validationCompleted) {
+      toast.error("Please validate your food item before submitting");
+      return;
+    }
+    
+    // Check if validation failed
+    if (validationResult && !validationResult.isValid) {
+      toast.error("Cannot list expired or unsafe food. Please upload a different item.");
+      return;
+    }
+    
+    // Add the selected image URL and validation result to the form data
     data.imageUrl = selectedImage;
+    data.validationResult = validationResult || undefined;
     
     // Pass the form data to the parent component
     onSubmit(data);
     
     // Reset the form
     form.reset();
+    setValidationResult(null);
+    setValidationCompleted(false);
     
     // Show a success toast
     toast.success("Donation listed successfully!");
@@ -108,194 +140,217 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
         onSubmit={form.handleSubmit(handleFormSubmit)}
         className="space-y-6 animate-fade-up"
       >
-        <FormField
-          control={form.control}
-          name="title"
-          rules={{ required: "Title is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="E.g., Fresh sandwich platter" 
-                  {...field} 
-                  className="focus-visible:ring-foodshare-500"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          rules={{ required: "Description is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe the food items, quantity, and any storage requirements"
-                  className="resize-none focus-visible:ring-foodshare-500"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <ShelfLifeValidator onValidationComplete={handleValidationComplete} />
+          
+          <Separator className="my-6" />
+          
           <FormField
             control={form.control}
-            name="foodType"
-            rules={{ required: "Food type is required" }}
+            name="title"
+            rules={{ required: "Title is required" }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Food Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="focus:ring-foodshare-500">
-                      <SelectValue placeholder="Select food type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {foodTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="quantity"
-            rules={{ required: "Quantity is required" }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Approximate Quantity</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="focus:ring-foodshare-500">
-                      <SelectValue placeholder="Select quantity" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {quantityOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="location"
-          rules={{ required: "Pickup location is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pickup Location</FormLabel>
-              <FormControl>
-                <Input placeholder="Address or landmark" {...field} className="focus-visible:ring-foodshare-500" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="expiry"
-          rules={{ required: "Expiry date is required" }}
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Expiry Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="E.g., Fresh sandwich platter" 
+                    {...field} 
+                    className="focus-visible:ring-foodshare-500"
                   />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <div>
-          <FormLabel className="block mb-2">Choose an Image</FormLabel>
-          <div className="grid grid-cols-3 gap-2">
-            {foodImageOptions.map((image, index) => (
-              <div 
-                key={index} 
-                className={`relative cursor-pointer rounded-md overflow-hidden border-2 transition-all ${
-                  selectedImage === image 
-                    ? 'border-foodshare-500 ring-2 ring-foodshare-200' 
-                    : 'border-transparent hover:border-foodshare-200'
-                }`}
-                onClick={() => setSelectedImage(image)}
-              >
-                <img 
-                  src={image} 
-                  alt={`Food option ${index + 1}`} 
-                  className="h-20 w-full object-cover"
-                />
-                {selectedImage === image && (
-                  <div className="absolute top-1 right-1 bg-foodshare-500 rounded-full w-5 h-5 flex items-center justify-center">
-                    <Plus className="h-3 w-3 text-white rotate-45" />
-                  </div>
+          <FormField
+            control={form.control}
+            name="description"
+            rules={{ required: "Description is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe the food items, quantity, and any storage requirements"
+                    className="resize-none focus-visible:ring-foodshare-500"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="foodType"
+              rules={{ required: "Food type is required" }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Food Type</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="focus:ring-foodshare-500">
+                        <SelectValue placeholder="Select food type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {foodTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="quantity"
+              rules={{ required: "Quantity is required" }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Approximate Quantity</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="focus:ring-foodshare-500">
+                        <SelectValue placeholder="Select quantity" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {quantityOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="location"
+            rules={{ required: "Pickup location is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pickup Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="Address or landmark" {...field} className="focus-visible:ring-foodshare-500" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="expiry"
+            rules={{ required: "Expiry date is required" }}
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Expiry Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+                {validationResult?.suggestedExpiry && (
+                  <p className="text-xs text-foodshare-600 mt-1">
+                    Suggested expiry based on image analysis
+                  </p>
                 )}
-              </div>
-            ))}
+              </FormItem>
+            )}
+          />
+
+          <div>
+            <FormLabel className="block mb-2">Choose an Image</FormLabel>
+            <div className="grid grid-cols-3 gap-2">
+              {foodImageOptions.map((image, index) => (
+                <div 
+                  key={index} 
+                  className={`relative cursor-pointer rounded-md overflow-hidden border-2 transition-all ${
+                    selectedImage === image 
+                      ? 'border-foodshare-500 ring-2 ring-foodshare-200' 
+                      : 'border-transparent hover:border-foodshare-200'
+                  }`}
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <img 
+                    src={image} 
+                    alt={`Food option ${index + 1}`} 
+                    className="h-20 w-full object-cover"
+                  />
+                  {selectedImage === image && (
+                    <div className="absolute top-1 right-1 bg-foodshare-500 rounded-full w-5 h-5 flex items-center justify-center">
+                      <Plus className="h-3 w-3 text-white rotate-45" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <Button 
           type="submit" 
           className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white"
+          disabled={!validationCompleted || (validationResult && !validationResult.isValid)}
         >
-          List Donation
+          {!validationCompleted 
+            ? "Validate Food First" 
+            : validationResult && !validationResult.isValid
+              ? "Cannot List Expired Food"
+              : "List Donation"}
         </Button>
+
+        {!validationCompleted && (
+          <p className="text-xs text-center text-muted-foreground">
+            Please validate your food item by uploading an image before listing
+          </p>
+        )}
       </form>
     </Form>
   );
