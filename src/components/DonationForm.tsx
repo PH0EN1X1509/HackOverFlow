@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,8 @@ const foodImageOptions = [
 
 const DonationForm = ({ onSubmit }: DonationFormProps) => {
   const [selectedImage, setSelectedImage] = useState(foodImageOptions[0]);
+  const [customImage, setCustomImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null);
   const [validationCompleted, setValidationCompleted] = useState(false);
@@ -113,6 +115,97 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
     setValidationCompleted(true);
   };
 
+  // Enhanced function to handle file upload with better optimization
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Show loading toast for large images
+    if (file.size > 1024 * 1024) {
+      toast.loading("Processing image, please wait...", {
+        id: "image-processing",
+        duration: 3000
+      });
+    }
+    
+    // Create a new image element to process the file
+    const img = new Image();
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      if (!e.target?.result) {
+        toast.error("Failed to read image file");
+        return;
+      }
+      
+      // Set the image source to the reader result
+      img.src = e.target.result as string;
+      
+      img.onload = () => {
+        try {
+          // Create a canvas to resize the image
+          const canvas = document.createElement('canvas');
+          
+          // Calculate new dimensions, keeping aspect ratio
+          // Reduce to even smaller dimensions (600x400) for better performance
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > 600) {
+              height = Math.round((height * 600) / width);
+              width = 600;
+            }
+          } else {
+            if (height > 400) {
+              width = Math.round((width * 400) / height);
+              height = 400;
+            }
+          }
+          
+          // Resize the canvas and draw the image
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            toast.error("Failed to process image");
+            return;
+          }
+          
+          // Use better image rendering
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Get the resized image as a data URL (JPEG format, lower quality for smaller size)
+          const optimizedImage = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Dismiss loading toast if it exists
+          toast.dismiss("image-processing");
+          
+          // Set the optimized image as our custom image
+          setCustomImage(optimizedImage);
+          setSelectedImage(optimizedImage);
+          
+          toast.success("Image processed successfully");
+        } catch (error) {
+          console.error("Error processing image:", error);
+          toast.error("Failed to process image. Please try another one or use our presets.");
+        }
+      };
+      
+      img.onerror = () => {
+        toast.error("Failed to load image. Please try another one.");
+      };
+    };
+    
+    reader.onerror = () => {
+      toast.error("Failed to read image file");
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
   const handleFormSubmit = (data: DonationFormValues) => {
     // Check if validation has been completed
     if (!validationCompleted) {
@@ -128,17 +221,18 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
       return;
     }
 
-    // Add the selected image URL and validation result to the form data
-    data.imageUrl = selectedImage;
+    // Add the selected image URL (either from preset or custom upload)
+    data.imageUrl = customImage || selectedImage;
     data.validationResult = validationResult || undefined;
 
     // Pass the form data to the parent component
     onSubmit(data);
 
-    // Reset the form
+    // Reset the form and image state
     form.reset();
     setValidationResult(null);
     setValidationCompleted(false);
+    setCustomImage(null);
 
     // Show a success toast
     toast.success("Donation listed successfully!");
@@ -348,29 +442,66 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
 
           <div>
             <FormLabel className="block mb-2">Choose an Image</FormLabel>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {foodImageOptions.map((image, index) => (
                 <div
                   key={index}
                   className={`relative cursor-pointer rounded-md overflow-hidden border-2 transition-all ${
-                    selectedImage === image
+                    selectedImage === image && !customImage
                       ? "border-foodshare-500 ring-2 ring-foodshare-200"
                       : "border-transparent hover:border-foodshare-200"
                   }`}
-                  onClick={() => setSelectedImage(image)}
+                  onClick={() => {
+                    setSelectedImage(image);
+                    setCustomImage(null);
+                  }}
                 >
                   <img
                     src={image}
                     alt={`Food option ${index + 1}`}
                     className="h-20 w-full object-cover"
                   />
-                  {selectedImage === image && (
+                  {selectedImage === image && !customImage && (
                     <div className="absolute top-1 right-1 bg-foodshare-500 rounded-full w-5 h-5 flex items-center justify-center">
                       <Plus className="h-3 w-3 text-white rotate-45" />
                     </div>
                   )}
                 </div>
               ))}
+            </div>
+            
+            {/* Add custom upload option */}
+            <div className="flex flex-col items-center space-y-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Upload Your Own Image
+              </Button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleFileUpload} 
+              />
+              
+              {/* Display custom image preview if uploaded */}
+              {customImage && (
+                <div className="relative w-full h-40 rounded-md overflow-hidden border-2 border-foodshare-500">
+                  <img 
+                    src={customImage} 
+                    alt="Custom upload" 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute top-2 right-2 bg-foodshare-500 rounded-full p-1">
+                    <Plus className="h-4 w-4 text-white rotate-45" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

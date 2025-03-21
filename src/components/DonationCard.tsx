@@ -1,6 +1,5 @@
-
-import { useState } from 'react';
-import { Clock, MapPin, ExternalLink, Award } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, MapPin, ExternalLink, Award, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { 
   Card, 
   CardHeader, 
@@ -11,7 +10,18 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
 
@@ -33,16 +43,26 @@ export interface DonationItem {
 interface DonationCardProps {
   donation: DonationItem;
   onStatusChange?: (id: string, newStatus: DonationItem['status']) => void;
+  onDelete?: (id: string) => void;
 }
 
-const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
+const DonationCard = ({ donation, onStatusChange, onDelete }: DonationCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { currentUser } = useAuth();
   
-  const handleReserve = () => {
-    if (onStatusChange) {
-      onStatusChange(donation.id, 'reserved');
-      toast.success("Donation reserved successfully!");
+  const isOwnDonation = currentUser?.id === donation.donorId;
+  
+  const handleReserve = async () => {
+    try {
+      if (onStatusChange) {
+        await onStatusChange(donation.id, 'reserved');
+        setShowDetails(false);
+        toast.success("Donation reserved successfully!");
+      }
+    } catch (error) {
+      console.error('Failed to reserve donation:', error);
+      toast.error("Failed to reserve donation. Please try again.");
     }
   };
   
@@ -50,6 +70,15 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
     if (onStatusChange) {
       onStatusChange(donation.id, 'completed');
       toast.success("Donation marked as completed!");
+    }
+  };
+  
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(donation.id);
+      setShowDeleteDialog(false);
+      setShowDetails(false);
+      toast.success("Donation deleted successfully!");
     }
   };
 
@@ -66,6 +95,11 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
     reserved: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
     completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   };
+
+  useEffect(() => {
+    // This effect will run whenever the donation prop changes
+    // This ensures the card updates when the parent component receives new donation data
+  }, [donation]);
 
   return (
     <>
@@ -140,6 +174,20 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
               </Button>
             )}
             
+            {donation.status === 'reserved' && (
+              <Badge className="bg-yellow-100 text-yellow-800 border-none dark:bg-yellow-900/30 dark:text-yellow-400 ml-auto">
+                Reserved
+              </Badge>
+            )}
+            
+            {isOwnDonation && donation.status === 'reserved' && (
+              <div className="ml-auto flex">
+                <Badge className="bg-yellow-100 text-yellow-800 border-none dark:bg-yellow-900/30 dark:text-yellow-400">
+                  Reserved
+                </Badge>
+              </div>
+            )}
+            
             {currentUser?.role === 'volunteer' && donation.status === 'reserved' && (
               <Button 
                 variant="default" 
@@ -149,6 +197,37 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
               >
                 Complete Delivery
               </Button>
+            )}
+            
+            {isOwnDonation && donation.status === 'available' && (
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Donation</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this donation? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </CardFooter>
@@ -178,6 +257,33 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
               <h4 className="text-sm font-medium mb-1">Description</h4>
               <p className="text-sm text-muted-foreground">{donation.description}</p>
             </div>
+            
+            {donation.status === 'reserved' && currentUser?.role === 'recipient' && (
+              <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200 flex items-center">
+                <div className="bg-yellow-100 p-2 rounded-full mr-3">
+                  <CheckCircle className="h-4 w-4 text-yellow-700" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-800">Reserved by You</h4>
+                  <p className="text-xs text-yellow-700">This donation is currently reserved by you for pickup.</p>
+                </div>
+              </div>
+            )}
+            
+            {donation.status === 'reserved' && isOwnDonation && (
+              <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                <div className="flex items-center mb-2">
+                  <div className="bg-yellow-100 p-2 rounded-full mr-3">
+                    <CheckCircle className="h-4 w-4 text-yellow-700" />
+                  </div>
+                  <h4 className="text-sm font-medium text-yellow-800">This Donation Has Been Reserved</h4>
+                </div>
+                <p className="text-xs text-yellow-700">
+                  A recipient has reserved this donation. They should pick it up before the expiration date. 
+                  The donation is no longer available to others.
+                </p>
+              </div>
+            )}
             
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -211,29 +317,57 @@ const DonationCard = ({ donation, onStatusChange }: DonationCardProps) => {
               </div>
             </div>
             
-            {currentUser?.role === 'recipient' && donation.status === 'available' && (
-              <Button 
-                className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white" 
-                onClick={() => {
-                  handleReserve();
-                  setShowDetails(false);
-                }}
-              >
-                Reserve This Donation
-              </Button>
-            )}
-            
-            {currentUser?.role === 'volunteer' && donation.status === 'reserved' && (
-              <Button 
-                className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white" 
-                onClick={() => {
-                  handleComplete();
-                  setShowDetails(false);
-                }}
-              >
-                Mark Delivery as Completed
-              </Button>
-            )}
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+              {currentUser?.role === 'recipient' && donation.status === 'available' && (
+                <Button 
+                  className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white" 
+                  onClick={handleReserve}
+                >
+                  Reserve This Donation
+                </Button>
+              )}
+              
+              {currentUser?.role === 'recipient' && donation.status === 'reserved' && (
+                <div className="w-full flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-2 text-center">
+                    Please pick up the food by the expiration date. Contact support if you need to cancel your reservation.
+                  </p>
+                </div>
+              )}
+              
+              {isOwnDonation && donation.status === 'reserved' && (
+                <div className="w-full flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-2 text-center">
+                    This donation has been reserved by a recipient. You will be notified when it is picked up.
+                  </p>
+                </div>
+              )}
+              
+              {currentUser?.role === 'volunteer' && donation.status === 'reserved' && (
+                <Button 
+                  className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white" 
+                  onClick={() => {
+                    handleComplete();
+                    setShowDetails(false);
+                  }}
+                >
+                  Mark Delivery as Completed
+                </Button>
+              )}
+              
+              {isOwnDonation && donation.status === 'available' && (
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={() => {
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Donation
+                </Button>
+              )}
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

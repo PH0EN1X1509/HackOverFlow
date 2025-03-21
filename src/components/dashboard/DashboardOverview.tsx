@@ -26,6 +26,7 @@ interface DashboardOverviewProps {
   setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
   getFilteredDonations: (status?: DonationItem['status']) => DonationItem[];
   handleStatusChange: (id: string, newStatus: DonationItem['status']) => void;
+  handleDeleteDonation: (id: string) => Promise<void>;
   setActiveView: (view: string) => void;
 }
 
@@ -35,6 +36,7 @@ const DashboardOverview = ({
   setNotifications,
   getFilteredDonations,
   handleStatusChange,
+  handleDeleteDonation,
   setActiveView
 }: DashboardOverviewProps) => {
   const markAllNotificationsAsRead = () => {
@@ -291,6 +293,7 @@ const DashboardOverview = ({
                 key={donation.id} 
                 donation={donation} 
                 onStatusChange={handleStatusChange}
+                onDelete={handleDeleteDonation}
               />
             ))}
             
@@ -347,6 +350,7 @@ const DashboardOverview = ({
                 key={donation.id} 
                 donation={donation} 
                 onStatusChange={handleStatusChange}
+                onDelete={handleDeleteDonation}
               />
             ))}
             
@@ -491,6 +495,67 @@ const DashboardOverview = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {currentUser.role === 'donor' && (
+        <Tabs defaultValue="active" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="active">Active Donations</TabsTrigger>
+            <TabsTrigger value="reserved">Reserved</TabsTrigger>
+            <TabsTrigger value="all">All Donations</TabsTrigger>
+          </TabsList>
+          <TabsContent value="active" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredDonations('available').map((donation) => (
+                <DonationCard 
+                  key={donation.id} 
+                  donation={donation} 
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDeleteDonation}
+                />
+              ))}
+              {getFilteredDonations('available').length === 0 && (
+                <div className="col-span-full text-center p-4">
+                  <p className="text-muted-foreground">No active donations. Create one by clicking the donate button.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="reserved" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredDonations('reserved').map((donation) => (
+                <DonationCard 
+                  key={donation.id} 
+                  donation={donation} 
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDeleteDonation}
+                />
+              ))}
+              {getFilteredDonations('reserved').length === 0 && (
+                <div className="col-span-full text-center p-4">
+                  <p className="text-muted-foreground">None of your donations are currently reserved.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="all" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredDonations().map((donation) => (
+                <DonationCard 
+                  key={donation.id} 
+                  donation={donation} 
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDeleteDonation}
+                />
+              ))}
+              {getFilteredDonations().length === 0 && (
+                <div className="col-span-full text-center p-4">
+                  <p className="text-muted-foreground">You haven't created any donations yet.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 };

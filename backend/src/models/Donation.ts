@@ -58,7 +58,8 @@ const donationSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    required: true
+    required: true,
+    maxlength: [7000000, "Image URL is too large, please use a smaller image"]
   },
   foodType: {
     type: String,

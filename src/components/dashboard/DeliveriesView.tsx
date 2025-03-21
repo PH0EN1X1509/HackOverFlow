@@ -1,13 +1,17 @@
-
 import { Truck } from 'lucide-react';
 import DonationCard, { DonationItem } from '@/components/DonationCard';
 
 interface DeliveriesViewProps {
   getFilteredDonations: (status?: DonationItem['status']) => DonationItem[];
   handleStatusChange: (id: string, newStatus: DonationItem['status']) => void;
+  handleDeleteDonation: (id: string) => Promise<void>;
 }
 
-const DeliveriesView = ({ getFilteredDonations, handleStatusChange }: DeliveriesViewProps) => {
+const DeliveriesView = ({ 
+  getFilteredDonations, 
+  handleStatusChange,
+  handleDeleteDonation
+}: DeliveriesViewProps) => {
   return (
     <div className="animate-fade-up">
       <div className="mb-6">
@@ -23,6 +27,7 @@ const DeliveriesView = ({ getFilteredDonations, handleStatusChange }: Deliveries
             key={donation.id} 
             donation={donation} 
             onStatusChange={handleStatusChange}
+            onDelete={handleDeleteDonation}
           />
         ))}
         

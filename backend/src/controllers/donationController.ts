@@ -42,16 +42,71 @@ export const createDonation = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Required fields missing' });
     }
     
+    // Handle the image URL
+    if (donationData.imageUrl && donationData.imageUrl.startsWith('data:image')) {
+      try {
+        console.log("Processing base64 image upload...");
+        
+        // Validate the base64 string format
+        const base64Regex = /^data:image\/(jpeg|jpg|png|gif);base64,/;
+        if (!base64Regex.test(donationData.imageUrl)) {
+          console.warn("Invalid base64 image format");
+          // Use a default image instead
+          donationData.imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+        }
+        
+        // Check approximate size (0.75 * length is rough estimate of decoded size in bytes)
+        const base64Data = donationData.imageUrl.split(',')[1] || '';
+        const approximateSize = base64Data.length * 0.75;
+        
+        // If image is too large (>5MB), use default instead
+        if (approximateSize > 5 * 1024 * 1024) {
+          console.warn("Image too large:", Math.round(approximateSize / 1024 / 1024), "MB");
+          return res.status(413).json({ 
+            message: 'Image too large. Please use a smaller image or choose from the presets.' 
+          });
+        }
+      } catch (imageError) {
+        console.error("Error processing image:", imageError);
+        // If there's an error processing the image, use a default one
+        donationData.imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+      }
+    } else if (!donationData.imageUrl) {
+      // If no image is provided, use a default one
+      donationData.imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+    }
+    
     // Create new donation
     const donation = new Donation(donationData);
-    const savedDonation = await donation.save();
     
-    res.status(201).json({ 
-      message: 'Donation created successfully', 
-      donation: savedDonation 
+    try {
+      const savedDonation = await donation.save();
+      res.status(201).json({ 
+        message: 'Donation created successfully', 
+        donation: savedDonation 
+      });
+    } catch (saveError: any) {
+      // Check for MongoDB-specific errors
+      if (saveError.name === 'ValidationError') {
+        if (saveError.errors?.imageUrl) {
+          return res.status(413).json({ 
+            message: 'Image too large. Please use a smaller image.' 
+          });
+        }
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: Object.values(saveError.errors).map((err: any) => err.message) 
+        });
+      }
+      
+      throw saveError; // Re-throw for the outer catch block
+    }
+  } catch (error: any) {
+    console.error("Donation creation error:", error);
+    res.status(500).json({ 
+      message: 'Error creating donation', 
+      error: error.message || 'Unknown error' 
     });
-  } catch (error) {
-    res.status(400).json({ message: 'Error creating donation', error });
   }
 };
 

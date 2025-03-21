@@ -146,8 +146,23 @@ export const apiMethods = {
   },
 
   async createDonation(donationData: CreateDonationData): Promise<{ message: string; donation: DonationItem }> {
-    const response = await api.post('/api/donations', donationData);
-    return response.data;
+    try {
+      // Check if we have a base64 image
+      if (donationData.imageUrl && donationData.imageUrl.startsWith('data:image')) {
+        console.log('Processing base64 image before sending to server...');
+        // The image is already optimized in the DonationForm component
+      }
+      
+      const response = await api.post('/api/donations', donationData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating donation:', error);
+      if (error.response?.status === 413) {
+        // Payload too large error
+        throw new Error('Image too large. Please use a smaller image or choose from the presets.');
+      }
+      throw error;
+    }
   },
 
   async updateDonation(id: string, donationData: Partial<DonationItem>): Promise<{ message: string; donation: DonationItem }> {
