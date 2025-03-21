@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,12 @@ import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const SignIn = () => {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, currentUser, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  if (isAuthenticated) {
+  if (currentUser) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,18 +6,18 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/context/AuthContext';
 
 const SignUp = () => {
-  const { signup, isAuthenticated, isLoading } = useAuth();
+  const { signup, currentUser, isLoading } = useAuth();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>(null);
+  const [role, setRole] = useState<'donor' | 'recipient' | 'volunteer' | ''>('');
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
 
-  if (isAuthenticated) {
+  if (currentUser) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -27,7 +26,7 @@ const SignUp = () => {
     setError('');
     
     // Form validation
-    if (!name || !email || !password || !role) {
+    if (!name || !username || !email || !password || !role) {
       setError('Please fill in all fields and select a role.');
       return;
     }
@@ -38,14 +37,20 @@ const SignUp = () => {
     }
 
     try {
-      await signup(name, email, password, role);
+      await signup({
+        name,
+        username,
+        email,
+        password,
+        role: role as 'donor' | 'recipient' | 'volunteer'
+      });
     } catch (err) {
       setError('Failed to create an account. Please try again.');
     }
   };
 
   const goToNextStep = () => {
-    if (step === 1 && (!name || !email || !password)) {
+    if (step === 1 && (!name || !username || !email || !password)) {
       setError('Please fill in all fields to continue.');
       return;
     }
@@ -145,6 +150,18 @@ const SignUp = () => {
                       autoComplete="name"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="johndoe"
+                      className="focus-visible:ring-foodshare-500"
+                      autoComplete="username"
+                    />
+                  </div>
                   
                   <div className="space-y-1.5">
                     <Label htmlFor="email">Email</Label>
@@ -194,8 +211,8 @@ const SignUp = () => {
                     </p>
                     
                     <RadioGroup 
-                      value={role || ''} 
-                      onValueChange={(value) => setRole(value as UserRole)}
+                      value={role} 
+                      onValueChange={(value) => setRole(value as 'donor' | 'recipient' | 'volunteer')}
                       className="space-y-3"
                     >
                       {roleOptions.map((option) => (
@@ -250,18 +267,20 @@ const SignUp = () => {
                   </div>
                 </>
               )}
-              
-              <div className="text-center pt-2">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <Link 
-                    to="/signin" 
-                    className="text-foodshare-600 hover:text-foodshare-700 transition-colors font-medium"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-              </div>
+
+              {step === 1 && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link 
+                      to="/signin" 
+                      className="text-foodshare-600 hover:text-foodshare-700 transition-colors font-medium"
+                    >
+                      Sign in
+                    </Link>
+                  </p>
+                </div>
+              )}
             </form>
           </div>
         </div>
