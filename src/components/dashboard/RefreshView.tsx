@@ -1,21 +1,31 @@
-
 import { RefreshCcw } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface RefreshViewProps {
   setActiveView: (view: string) => void;
+  onRefresh?: () => Promise<void>;
 }
 
-const RefreshView = ({ setActiveView }: RefreshViewProps) => {
+const RefreshView = ({ setActiveView, onRefresh }: RefreshViewProps) => {
   useEffect(() => {
-    // Automatically return to overview after a delay
-    const timer = setTimeout(() => {
-      setActiveView('overview');
-    }, 1500);
+    const refreshData = async () => {
+      if (onRefresh) {
+        try {
+          await onRefresh();
+        } catch (error) {
+          console.error("Error refreshing data:", error);
+        }
+      }
+      
+      // Automatically return to overview after a delay
+      setTimeout(() => {
+        setActiveView('overview');
+      }, 1500);
+    };
     
-    return () => clearTimeout(timer);
-  }, [setActiveView]);
-
+    refreshData();
+  }, [setActiveView, onRefresh]);
+  
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center animate-fade-up">
       <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">

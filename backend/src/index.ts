@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import donationRoutes from './routes/donationRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +40,7 @@ mongoose.connect(MONGODB_URI, {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/donations', donationRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -48,4 +50,4 @@ app.get('/', (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-}); 
+});

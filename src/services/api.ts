@@ -13,6 +13,34 @@ export interface User {
   updatedAt: string;
 }
 
+export interface DonationItem {
+  id: string;
+  title: string;
+  description: string;
+  donorName: string;
+  donorId: string;
+  location: string;
+  expiry: string;
+  quantity: string;
+  status: 'available' | 'reserved' | 'completed';
+  imageUrl: string;
+  foodType: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateDonationData {
+  title: string;
+  description: string;
+  donorName: string;
+  donorId: string;
+  location: string;
+  expiry: Date | string;
+  quantity: string;
+  imageUrl: string;
+  foodType: string;
+}
+
 export interface CreateUserData {
   username: string;
   email: string;
@@ -67,38 +95,73 @@ api.interceptors.response.use(
 export const apiMethods = {
   // Auth endpoints
   async login(data: LoginData): Promise<{ message: string; user: User }> {
-    const response = await api.post('/auth/login', data);
+    const response = await api.post('/api/auth/login', data);
     return response.data;
   },
 
   async signup(data: SignupData): Promise<{ message: string; user: User }> {
-    const response = await api.post('/auth/signup', data);
+    const response = await api.post('/api/auth/signup', data);
     return response.data;
   },
 
   // User endpoints
   async getUsers(): Promise<User[]> {
-    const response = await api.get('/users');
+    const response = await api.get('/api/users');
     return response.data;
   },
 
   async getUserById(id: string): Promise<User> {
-    const response = await api.get(`/users/${id}`);
+    const response = await api.get(`/api/users/${id}`);
     return response.data;
   },
 
   async createUser(userData: CreateUserData): Promise<{ message: string; user: User }> {
-    const response = await api.post('/users', userData);
+    const response = await api.post('/api/users', userData);
     return response.data;
   },
 
   async updateUser(id: string, userData: Partial<User>): Promise<{ message: string; user: User }> {
-    const response = await api.put(`/users/${id}`, userData);
+    const response = await api.put(`/api/users/${id}`, userData);
     return response.data;
   },
 
   async deleteUser(id: string): Promise<{ message: string }> {
-    const response = await api.delete(`/users/${id}`);
+    const response = await api.delete(`/api/users/${id}`);
+    return response.data;
+  },
+
+  // Donation endpoints
+  async getDonations(filters?: { status?: string; donorId?: string }): Promise<DonationItem[]> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.donorId) params.append('donorId', filters.donorId);
+    
+    const response = await api.get(`/api/donations?${params.toString()}`);
+    return response.data;
+  },
+
+  async getDonationById(id: string): Promise<DonationItem> {
+    const response = await api.get(`/api/donations/${id}`);
+    return response.data;
+  },
+
+  async createDonation(donationData: CreateDonationData): Promise<{ message: string; donation: DonationItem }> {
+    const response = await api.post('/api/donations', donationData);
+    return response.data;
+  },
+
+  async updateDonation(id: string, donationData: Partial<DonationItem>): Promise<{ message: string; donation: DonationItem }> {
+    const response = await api.put(`/api/donations/${id}`, donationData);
+    return response.data;
+  },
+
+  async updateDonationStatus(id: string, status: 'available' | 'reserved' | 'completed'): Promise<{ message: string; donation: DonationItem }> {
+    const response = await api.patch(`/api/donations/${id}/status`, { status });
+    return response.data;
+  },
+
+  async deleteDonation(id: string): Promise<{ message: string }> {
+    const response = await api.delete(`/api/donations/${id}`);
     return response.data;
   },
 
@@ -106,17 +169,4 @@ export const apiMethods = {
     const response = await api.get('/');
     return response.data;
   },
-  
-  // Add more API methods here as needed
-  // Example:
-  // async createData(data: any) {
-  //   const response = await fetch(`${API_BASE_URL}/data`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify(data),
-  //   });
-  //   return response.json();
-  // }
-}; 
+};

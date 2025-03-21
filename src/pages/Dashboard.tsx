@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, BarChart2, MapIcon } from 'lucide-react';
@@ -9,6 +8,7 @@ import { DonationFormValues } from '@/components/DonationForm';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { NotificationItem } from '@/components/dashboard/types';
+import { apiMethods } from '@/services/api';
 
 // Import all dashboard view components
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
@@ -23,93 +23,7 @@ import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 import EducationalContent from '@/components/EducationalContent';
 import DonationView from '@/components/dashboard/DonationView';
 
-const MOCK_DONATIONS: DonationItem[] = [
-  {
-    id: '1',
-    title: 'Fresh Sandwich Platter',
-    description: 'Assorted sandwich platter from catered event. Contains various fillings including vegetarian options.',
-    donorName: 'City Catering Co.',
-    donorId: '1',
-    location: '123 Main St, Downtown',
-    expiry: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
-    quantity: 'Medium (4-10 meals)',
-    status: 'available',
-    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Prepared Meals',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-  },
-  {
-    id: '2',
-    title: 'Bakery Items Assortment',
-    description: 'Day-old breads, pastries, and baked goods. Still fresh and delicious.',
-    donorName: 'Fresh Bake Bakery',
-    donorId: '2',
-    location: '456 Oak Ave, Westside',
-    expiry: new Date(Date.now() + 1.5 * 24 * 60 * 60 * 1000).toISOString(), // 1.5 days from now
-    quantity: 'Large (11-25 meals)',
-    status: 'available',
-    imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Bread & Baked',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-  },
-  {
-    id: '3',
-    title: 'Fresh Produce Box',
-    description: 'Mixed vegetables and fruits. Some items may have minor blemishes but all are perfectly edible.',
-    donorName: 'Green Grocers',
-    donorId: '3',
-    location: '789 Market St, Eastside',
-    expiry: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-    quantity: 'Medium (4-10 meals)',
-    status: 'reserved',
-    imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Fresh Produce',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-  },
-  {
-    id: '4',
-    title: 'Pasta & Sauce Meal Kits',
-    description: 'Restaurant-quality pasta with separate containers of sauce. Ready to heat and serve.',
-    donorName: 'Pasta Palace',
-    donorId: '1',
-    location: '321 Pine St, Northside',
-    expiry: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-    quantity: 'Small (1-3 meals)',
-    status: 'completed',
-    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Prepared Meals',
-    createdAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(), // 36 hours ago
-  },
-  {
-    id: '5',
-    title: 'Canned Food Assortment',
-    description: 'Various canned goods including vegetables, beans, and soups. All within expiration date.',
-    donorName: 'Community Pantry',
-    donorId: '3',
-    location: '567 Elm St, Southside',
-    expiry: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
-    quantity: 'Large (11-25 meals)',
-    status: 'available',
-    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Canned Goods',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
-  },
-  {
-    id: '6',
-    title: 'Fruit Smoothie Packs',
-    description: 'Pre-packaged smoothie ingredients ready to blend. Contains various fruits and yogurt.',
-    donorName: 'Health Juice Bar',
-    donorId: '2',
-    location: '890 Cedar Rd, Westside',
-    expiry: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
-    quantity: 'Medium (4-10 meals)',
-    status: 'reserved',
-    imageUrl: 'https://images.unsplash.com/photo-1593759608142-e08b84568198?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    foodType: 'Beverages',
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
-  },
-];
-
+// Using mock notifications for now
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '1',
@@ -138,9 +52,22 @@ const Dashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_NOTIFICATIONS);
-  const [donations, setDonations] = useState<DonationItem[]>(MOCK_DONATIONS);
+  const [donations, setDonations] = useState<DonationItem[]>([]);
   const [activeView, setActiveView] = useState<string>('overview');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  const fetchDonations = async () => {
+    try {
+      setIsLoading(true);
+      const donationData = await apiMethods.getDonations();
+      setDonations(donationData);
+    } catch (error) {
+      console.error('Error fetching donations:', error);
+      toast.error('Failed to load donations. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const getFilteredDonations = (status?: DonationItem['status']) => {
     if (!currentUser) return [];
@@ -164,42 +91,59 @@ const Dashboard = () => {
     return filtered;
   };
 
-  const handleStatusChange = (id: string, newStatus: DonationItem['status']) => {
-    setDonations(donations.map(donation => 
-      donation.id === id ? { ...donation, status: newStatus } : donation
-    ));
+  const handleStatusChange = async (id: string, newStatus: DonationItem['status']) => {
+    try {
+      const response = await apiMethods.updateDonationStatus(id, newStatus);
+      
+      // Update local state with the updated donation
+      setDonations(donations.map(donation => 
+        donation.id === id ? { ...donation, status: newStatus } : donation
+      ));
+      
+      if (newStatus === 'reserved') {
+        toast.success("Donation reserved successfully!");
+      } else if (newStatus === 'completed') {
+        toast.success("Donation marked as completed!");
+      }
+    } catch (error) {
+      console.error('Error updating donation status:', error);
+      toast.error('Failed to update donation status. Please try again.');
+    }
   };
 
-  const handleAddDonation = (formData: DonationFormValues) => {
+  const handleAddDonation = async (formData: DonationFormValues) => {
     if (!currentUser) return;
     
-    const newDonation: DonationItem = {
-      id: `donation_${Date.now()}`,
-      title: formData.title,
-      description: formData.description,
-      donorName: currentUser.name,
-      donorId: currentUser.id,
-      location: formData.location,
-      expiry: formData.expiry.toISOString(),
-      quantity: formData.quantity,
-      status: 'available',
-      imageUrl: formData.imageUrl,
-      foodType: formData.foodType,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setDonations([newDonation, ...donations]);
-    toast.success("Donation created successfully!");
-    setActiveView('overview');
+    try {
+      const donationData = {
+        title: formData.title,
+        description: formData.description,
+        donorName: currentUser.name,
+        donorId: currentUser.id,
+        location: formData.location,
+        expiry: formData.expiry.toISOString(),
+        quantity: formData.quantity,
+        imageUrl: formData.imageUrl,
+        foodType: formData.foodType,
+      };
+      
+      const response = await apiMethods.createDonation(donationData);
+      
+      // Add the new donation to the local state
+      setDonations([response.donation, ...donations]);
+      toast.success("Donation created and stored in database successfully!");
+      setActiveView('overview');
+    } catch (error) {
+      console.error('Error creating donation:', error);
+      toast.error('Failed to create donation. Please try again.');
+    }
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (currentUser) {
+      fetchDonations();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser && !isLoading) {
@@ -263,7 +207,7 @@ const Dashboard = () => {
         return <MapView />;
         
       case 'refresh':
-        return <RefreshView setActiveView={setActiveView} />;
+        return <RefreshView setActiveView={setActiveView} onRefresh={fetchDonations} />;
         
       default:
         return <DefaultView />;
