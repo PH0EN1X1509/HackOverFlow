@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +30,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ShelfLifeValidator, { ValidationResult } from "./ShelfLifeValidator";
 import { Separator } from "@/components/ui/separator";
+import MapPopup from "./MapPopup";
 
 interface DonationFormProps {
   onSubmit: (data: DonationFormValues) => void;
@@ -78,9 +78,17 @@ const foodImageOptions = [
 
 const DonationForm = ({ onSubmit }: DonationFormProps) => {
   const [selectedImage, setSelectedImage] = useState(foodImageOptions[0]);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
   const [validationCompleted, setValidationCompleted] = useState(false);
-
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const handleLocationSelect = (lat: number, lng: number) => {
+    const locationString = `Lat: ${lat}, Lng: ${lng}`;
+    setSelectedLocation(locationString);
+    setMapOpen(false);
+    form.setValue("location", locationString); // Update the form value
+  };
   const form = useForm<DonationFormValues>({
     defaultValues: {
       title: "",
@@ -111,25 +119,27 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
       toast.error("Please validate your food item before submitting");
       return;
     }
-    
+
     // Check if validation failed
     if (validationResult && !validationResult.isValid) {
-      toast.error("Cannot list expired or unsafe food. Please upload a different item.");
+      toast.error(
+        "Cannot list expired or unsafe food. Please upload a different item."
+      );
       return;
     }
-    
+
     // Add the selected image URL and validation result to the form data
     data.imageUrl = selectedImage;
     data.validationResult = validationResult || undefined;
-    
+
     // Pass the form data to the parent component
     onSubmit(data);
-    
+
     // Reset the form
     form.reset();
     setValidationResult(null);
     setValidationCompleted(false);
-    
+
     // Show a success toast
     toast.success("Donation listed successfully!");
   };
@@ -142,9 +152,9 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
       >
         <div className="space-y-6">
           <ShelfLifeValidator onValidationComplete={handleValidationComplete} />
-          
+
           <Separator className="my-6" />
-          
+
           <FormField
             control={form.control}
             name="title"
@@ -153,9 +163,9 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
               <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="E.g., Fresh sandwich platter" 
-                    {...field} 
+                  <Input
+                    placeholder="E.g., Fresh sandwich platter"
+                    {...field}
                     className="focus-visible:ring-foodshare-500"
                   />
                 </FormControl>
@@ -243,7 +253,7 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
             />
           </div>
 
-          <FormField
+          {/* <FormField
             control={form.control}
             name="location"
             rules={{ required: "Pickup location is required" }}
@@ -256,8 +266,39 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
                 <FormMessage />
               </FormItem>
             )}
+          /> */}
+          <FormField
+            control={form.control}
+            name="location"
+            rules={{ required: "Location is required" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pickup Location</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      value={selectedLocation || ""}
+                      placeholder="Select location from map"
+                      readOnly
+                      className="pr-10 focus-visible:ring-foodshare-500 cursor-pointer"
+                      onClick={() => setMapOpen(true)}
+                    />
+                    <MapPin
+                      className="absolute right-3 top-2.5 text-foodshare-500 cursor-pointer"
+                      onClick={() => setMapOpen(true)}
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-
+          {mapOpen && (
+            <MapPopup
+              onSelectLocation={handleLocationSelect} // Now correctly expecting two arguments
+              onClose={() => setMapOpen(false)}
+            />
+          )}
           <FormField
             control={form.control}
             name="expiry"
@@ -309,18 +350,18 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
             <FormLabel className="block mb-2">Choose an Image</FormLabel>
             <div className="grid grid-cols-3 gap-2">
               {foodImageOptions.map((image, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className={`relative cursor-pointer rounded-md overflow-hidden border-2 transition-all ${
-                    selectedImage === image 
-                      ? 'border-foodshare-500 ring-2 ring-foodshare-200' 
-                      : 'border-transparent hover:border-foodshare-200'
+                    selectedImage === image
+                      ? "border-foodshare-500 ring-2 ring-foodshare-200"
+                      : "border-transparent hover:border-foodshare-200"
                   }`}
                   onClick={() => setSelectedImage(image)}
                 >
-                  <img 
-                    src={image} 
-                    alt={`Food option ${index + 1}`} 
+                  <img
+                    src={image}
+                    alt={`Food option ${index + 1}`}
                     className="h-20 w-full object-cover"
                   />
                   {selectedImage === image && (
@@ -334,16 +375,19 @@ const DonationForm = ({ onSubmit }: DonationFormProps) => {
           </div>
         </div>
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white"
-          disabled={!validationCompleted || (validationResult && !validationResult.isValid)}
+          disabled={
+            !validationCompleted ||
+            (validationResult && !validationResult.isValid)
+          }
         >
-          {!validationCompleted 
-            ? "Validate Food First" 
+          {!validationCompleted
+            ? "Validate Food First"
             : validationResult && !validationResult.isValid
-              ? "Cannot List Expired Food"
-              : "List Donation"}
+            ? "Cannot List Expired Food"
+            : "List Donation"}
         </Button>
 
         {!validationCompleted && (
