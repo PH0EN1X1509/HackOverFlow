@@ -138,7 +138,7 @@ const SignIn = () => {
               </div>
             </form>
 
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <Separator />
@@ -173,7 +173,7 @@ const SignIn = () => {
                   Volunteer Demo
                 </Button>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

@@ -123,7 +123,7 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} FoodShare. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground mt-4 md:mt-0">
-            Made with 💚 for a more sustainable future
+            Made by Team Error 101!
           </p>
         </div>
       </div>

@@ -159,9 +159,9 @@ const Index = () => {
                     </Button>
                   </Link>
                   <Link to="/about">
-                    <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:border-white">
-                      Learn More
-                    </Button>
+                      <Button size="lg" variant="outline" className="text-primary">
+                        Learn More
+                      </Button>
                   </Link>
                 </div>
               </div>

@@ -12,11 +12,11 @@ const Hero = () => {
       <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block px-3 py-1 mb-6 text-xs font-medium tracking-wider text-foodshare-800 uppercase bg-foodshare-100 rounded-full animate-fade-in">
-            Reducing Food Waste, One Donation at a Time
+            Donation is only the key to reduce food was te
           </div>
           
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            Connect Surplus Food <br />
+            Donate Surplus Food <br />
             <span className="text-shimmer animate-text-shimmer">with Those Who Need It</span>
           </h1>
           
@@ -54,6 +54,8 @@ const Hero = () => {
 
         <div className="mt-20 lg:mt-32 max-w-5xl mx-auto animate-blur-in" style={{ animationDelay: '0.4s' }}>
           <div className="relative rounded-xl overflow-hidden shadow-2xl">
+            <h2>Major food waste in wedding industry</h2>
+            <p>According to the NGO Feeding India, 10 to 20 per cent of the food served at weddings goes to waste</p>
             <img 
               src="https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" 
               alt="Food donation" 

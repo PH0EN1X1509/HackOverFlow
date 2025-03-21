@@ -1,9 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
 @layer base {
   :root {
@@ -84,87 +83,5 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 142 45% 42%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Glass effect */
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20;
-  }
-
-  .dark .glass {
-    @apply bg-black/30 backdrop-blur-md border border-white/10;
-  }
-
-  /* Smooth page transitions */
-  .page-transition-enter {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  .page-transition-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 300ms, transform 300ms;
-  }
-  .page-transition-exit {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .page-transition-exit-active {
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: opacity 300ms, transform 300ms;
-  }
-
-  /* Hero gradient */
-  .hero-gradient {
-    background: linear-gradient(
-      135deg,
-      rgba(139, 207, 140, 0.15) 0%,
-      rgba(91, 183, 93, 0.1) 50%,
-      rgba(42, 156, 60, 0.05) 100%
-    );
-  }
-
-  /* Text shimmer effect */
-  .text-shimmer {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(
-      90deg,
-      theme('colors.foodshare.500'),
-      theme('colors.foodshare.300'),
-      theme('colors.foodshare.500')
-    );
-    background-size: 200% auto;
-  }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: theme('colors.muted.DEFAULT');
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: theme('colors.foodshare.300');
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.foodshare.400');
   }
 }
