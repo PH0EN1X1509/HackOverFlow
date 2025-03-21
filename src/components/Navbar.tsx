@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
@@ -8,8 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, currentUser, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const location = useLocation();
+
+  // Track current active section
+  const [activeLink, setActiveLink] = useState(location.pathname);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,24 +25,24 @@ const Navbar = () => {
   useEffect(() => {
     // Close mobile menu on route change
     setIsMobileMenuOpen(false);
+    // Update active link when location changes
+    setActiveLink(location.pathname);
   }, [location.pathname]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const isLinkActive = (link) => {
+    return activeLink === link ? 'text-foodshare-500' : 'text-foreground/80';
+  };
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/80 shadow-sm backdrop-blur-md dark:bg-gray-900/80' : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 shadow-sm backdrop-blur-md dark:bg-gray-900/80' : 'bg-transparent'}`}
     >
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link 
-          to="/" 
-          className="flex items-center space-x-2 group"
-          aria-label="FoodShare Logo"
-        >
+        <Link to="/" className="flex items-center space-x-2 group" aria-label="FoodShare Logo">
           <div className="w-8 h-8 rounded-full bg-foodshare-500 flex items-center justify-center transition-transform group-hover:scale-110">
             <span className="text-white font-semibold text-sm">FS</span>
           </div>
@@ -51,26 +53,26 @@ const Navbar = () => {
 
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          <Link 
-            to="/" 
-            className="text-foreground/80 hover:text-foodshare-600 transition-colors"
+          <Link
+            to="/"
+            className={`hover:text-foodshare-600 transition-colors ${isLinkActive('/')}`}
           >
             Home
           </Link>
-          <Link 
-            to="/about" 
-            className="text-foreground/80 hover:text-foodshare-600 transition-colors"
+          <Link
+            to="/about"
+            className={`hover:text-foodshare-600 transition-colors ${isLinkActive('/about')}`}
           >
             About Us
           </Link>
-          <Link 
-            to="/how-it-works" 
-            className="text-foreground/80 hover:text-foodshare-600 transition-colors"
+          <Link
+            to="/how-it-works"
+            className={`hover:text-foodshare-600 transition-colors ${isLinkActive('/how-it-works')}`}
           >
             How It Works
           </Link>
           
-          {isAuthenticated ? (
+          {currentUser ? (
             <div className="flex items-center space-x-3">
               <Link to="/dashboard">
                 <Button variant="outline" className="border-foodshare-200 hover:border-foodshare-400">
@@ -115,25 +117,25 @@ const Navbar = () => {
           <nav className="container mx-auto px-4 py-8 flex flex-col space-y-6">
             <Link
               to="/"
-              className="text-lg font-medium hover:text-foodshare-500 transition-colors"
+              className={`text-lg font-medium hover:text-foodshare-500 transition-colors ${isLinkActive('/')}`}
             >
               Home
             </Link>
             <Link
               to="/about"
-              className="text-lg font-medium hover:text-foodshare-500 transition-colors"
+              className={`text-lg font-medium hover:text-foodshare-500 transition-colors ${isLinkActive('/about')}`}
             >
               About Us
             </Link>
             <Link
               to="/how-it-works"
-              className="text-lg font-medium hover:text-foodshare-500 transition-colors"
+              className={`text-lg font-medium hover:text-foodshare-500 transition-colors ${isLinkActive('/how-it-works')}`}
             >
               How It Works
             </Link>
             
             <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-              {isAuthenticated ? (
+              {currentUser ? (
                 <div className="flex flex-col space-y-4">
                   <Link to="/dashboard">
                     <Button className="w-full bg-foodshare-500 hover:bg-foodshare-600 text-white">

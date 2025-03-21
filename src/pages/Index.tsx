@@ -38,19 +38,19 @@ const Index = () => {
   const stats = [
     { 
       label: "Food Waste Reduced", 
-      value: "4.2 tons", 
+      value: "4.2 kgs", 
       icon: ShieldCheck, 
       color: "bg-green-50 text-green-600" 
     },
     { 
-      label: "Active Communities", 
-      value: "128+", 
+      label: "Active Helpers", 
+      value: "90+", 
       icon: UtensilsCrossed, 
       color: "bg-blue-50 text-blue-600" 
     },
     { 
       label: "Successful Deliveries", 
-      value: "3,847", 
+      value: "847", 
       icon: Truck, 
       color: "bg-amber-50 text-amber-600" 
     }
